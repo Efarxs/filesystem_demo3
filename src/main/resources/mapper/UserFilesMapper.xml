@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.filesystem.filesystemweb.mapper.UserFilesMapper">
+
+    <resultMap id="BaseResultMap" type="com.filesystem.filesystemweb.entity.UserFiles">
+            <id property="id" column="id" jdbcType="INTEGER"/>
+            <result property="fileId" column="file_id" jdbcType="INTEGER"/>
+            <result property="userId" column="user_id" jdbcType="INTEGER"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,file_id,user_id,
+        create_time
+    </sql>
+    <select id="getFilesByUserId" resultType="com.filesystem.filesystemweb.entity.Files">
+        SELECT b.name,b.size,
+               b.location,b.hash,b.user_id, a.create_time, a.id FROM user_files AS a LEFT JOIN files b ON a.file_id = b.id WHERE a.user_id = #{id}
+    </select>
+    <select id="getFileById" resultType="com.filesystem.filesystemweb.entity.Files">
+        SELECT b.name,b.size,
+               b.location,b.hash,b.user_id, a.create_time, a.id FROM user_files AS a LEFT JOIN files b ON a.file_id = b.id WHERE a.id = #{id}
+    </select>
+
+</mapper>

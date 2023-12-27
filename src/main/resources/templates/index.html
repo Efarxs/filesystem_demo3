@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <title>文件管理系统</title>
+    <style>
+        .drop_zone {
+            border: 2px dashed #0087F7;
+            border-radius: 5px;
+            padding: 50px;
+            text-align: center;
+            color: #0087F7;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 导航条 -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">文件管理</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+            <li class="nav-item active">
+                <a class="nav-link" href="#">首页 <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-toggle="modal" data-target="#uploadModal">上传</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#"><span th:if="${user.vip}" style="color:red;">VIP用户,</span><span th:utext="${user.username}"></span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="javascript:logout()">退出登录</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- 文件上传模态框 -->
+<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadModalLabel">文件上传</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="modal_drop_zone" class="drop_zone" onclick="document.getElementById('file_input').click()">拖动文件到这里上传，或者点击上传 <input type="file" style="display:none;" id="file_input"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 主体内容 -->
+<div class="container-fluid">
+    <div class="row">
+        <!-- 文件展示区 -->
+        <div class="col-md-12">
+            <h5 class="my-4">文件详情</h5>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>名称</th>
+                    <th>大小</th>
+                    <th>特征值</th>
+                    <th>上传日期</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- 文件列表 -->
+                <tr th:each="item : ${list}">
+                    <td th:utext="${item.id}"></td>
+                    <td th:utext="${item.name}"></td>
+                    <td th:utext="${@FileUtil.formatSize(item.size)}"></td>
+                    <td th:utext="${item.hash}"></td>
+                    <td th:utext="${item.createTime}"></td>
+                    <td class="actions">
+                        <button class="btn btn-success" th:attr="onclick='download(\'' + ${item.id} + '\')'">下载</button>
+                        <button class="btn btn-danger" th:attr="onclick='del(\'' + ${item.id} + '\')'">删除</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+<script src="/js/popper.min.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script src="/js/md5.min.js"></script>
+<script src="/layer/layer.js"></script>
+
+<script>
+    let load = null;
+    // 选择文件事件
+    function handleFileSelect(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+
+        let file = evt.dataTransfer ? evt.dataTransfer.files[0] : evt.target.files[0];
+        calculateFileHash(file);
+    }
+
+    /**
+     * 下载文件
+     * @param id
+     */
+    function download(id) {
+        if (!id) {
+            alert("文件id缺失！!");
+            return;
+        }
+        window.open("/file/download/" + id);
+    }
+
+    /**
+     * 删除文件
+     * @param id
+     */
+    function del(id) {
+        if (!id) {
+            alert("文件id缺失！!");
+            return;
+        }
+        $.ajax({
+            url: '/file/delete/' + id,
+            type: 'DELETE',
+            dataType: "json",
+            success: function (res) {
+                if (res.code == 200) {
+                    // 删除成功
+                    alert("文件删除成功");
+                    window.location.href = "/";
+                    return;
+                } else {
+                    // 删除失败
+                    alert(res.message);
+                }
+            },
+            error: function (error) {
+                alert("服务器连接失败！" + error);
+            }
+        });
+    }
+
+    /**
+     * 退出登录
+     */
+    function logout() {
+        $.ajax({
+            url: '/logout',
+            type: 'GET',
+            dataType: "json",
+            success: function (res) {
+                if (res.code == 200) {
+                    window.location.href = "/login";
+                    return true;
+                } else {
+                    // 失败
+                    alert(res.message);
+                }
+            },
+            error: function (error) {
+                alert("服务器连接失败！" + error);
+            }
+        });
+
+    }
+
+    /**
+     * 检查是否已经上传过了 实现秒传
+     * @param file
+     * @param hash
+     */
+    function checkHash(file,hash) {
+        $.ajax({
+            url: '/file/check',
+            type: 'POST',
+            data: {hash:hash},
+            dataType: "JSON",
+            success: function(res) {
+                if (res.code === 200) {
+                    layer.close(load);
+                    alert('文件上传成功！');
+                    // 刷新页面
+                    window.location.reload();
+                } else if (res.code !== -100) {
+                    // 没有上传过
+                    uploadFile(file,hash);
+                } else {
+                    alert(res.message);
+                }
+                return true;
+            },
+            error: function(error) {
+                console.error('服务器错误:', error);
+            }
+        });
+    }
+
+    /**
+     * 上传文件
+     * @param file
+     * @param hash
+     */
+    function uploadFile(file,hash) {
+        let formData = new FormData();
+        formData.append('file', file);
+        formData.append("md5",hash);
+
+        // 上传文件
+        $.ajax({
+            url: '/file/upload',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            dataType: "JSON",
+            success: function(res) {
+                if (res.code === 200) {
+                    layer.close(load);
+                    alert('文件上传成功！');
+                    // 刷新页面
+                    window.location.reload();
+                } else {
+                    alert(res.message);
+                }
+
+            },
+            error: function(error) {
+                console.error('服务器错误:', error);
+            }
+        });
+
+    }
+
+    // 计算文件的MD5特征值
+    function calculateFileHash(file) {
+        let reader = new FileReader();
+        load = layer.load();
+        reader.onload = function(event) {
+            let fileData = event.target.result;
+            // 使用MD5计算哈希值
+            let hash = md5(fileData);
+
+            checkHash(file,hash);
+
+        };
+        reader.readAsBinaryString(file);
+    }
+
+    function handleDragOver(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        evt.dataTransfer.dropEffect = 'copy';
+    }
+
+    let modalDropZone = document.getElementById('modal_drop_zone');
+    let fileInput = document.getElementById('file_input');
+    // 添加拖拽事件
+    modalDropZone.addEventListener('dragover', handleDragOver, false);
+    modalDropZone.addEventListener('drop', handleFileSelect, false);
+    // 监听内容修改事件 如果拖拽框的内容发生更改，即有文件内容了，就是要触发上传了
+    fileInput.addEventListener('change', handleFileSelect, false);
+</script>
+</body>
+</html>

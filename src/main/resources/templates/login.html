@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <title>登录</title>
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-center align-items-center" style="height:100vh">
+        <div class="col-4">
+            <div class="card">
+                <div class="card-body">
+                    <form>
+                        <h3 class="text-center">登录</h3>
+                        <div class="form-group">
+                            <label for="username">账号</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">密码</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <button type="button" class="btn btn-primary" id="btn">登录</button><a href="/register">没有账号？</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/js/jquery-3.6.4.min.js"></script>
+<script src="/layer/layer.js"></script>
+<script>
+    $(document).ready(() => {
+        /**
+         * 用户登录
+         */
+        $("#btn").click(() => {
+            let load = layer.load();
+            let username = $("#username").val();
+            let password = $("#password").val();
+
+            $.ajax({
+                url: '/login',
+                type: 'POST',
+                data: {username:username,password:password},
+                dataType: "JSON",
+                success: function(res) {
+                    layer.close(load);
+                    if (res.code === 200) {
+                        layer.alert("登录成功",() => {
+                            window.location.href = "/";
+                        });
+                    } else {
+                        layer.alert(res.message);
+                    }
+                },
+                error: function(error) {
+                    layer.close(load);
+                    console.error('服务器错误:', error);
+                }
+            });
+        })
+    })
+</script>
+</body>
+</html>

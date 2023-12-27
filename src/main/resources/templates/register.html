@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <title>注册</title>
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-center align-items-center" style="height:100vh">
+        <div class="col-4">
+            <div class="card">
+                <div class="card-body">
+                    <form>
+                        <h3 class="text-center">注册</h3>
+                        <div class="form-group">
+                            <label for="username">账号</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">密码</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="captcha">验证码</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="captcha" required>
+                                <div class="input-group-append">
+                                    <span class="input-group-text"><img src="/captcha" onclick="this.src = '/captcha?t=' + Math.random()" /> </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="vipToken">VIP口令</label>
+                            <input type="text" class="form-control" id="vipToken">
+                        </div>
+                        <button type="button" class="btn btn-success" id="btn">注册</button><a href="/register">有账号？</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/js/jquery-3.6.4.min.js"></script>
+<script src="/layer/layer.js"></script>
+<script>
+    $(document).ready(() => {
+        /**
+         * 用户注册
+         */
+        $("#btn").click(() => {
+            let load = layer.load();
+            let username = $("#username").val();
+            let password = $("#password").val();
+            let captcha = $("#captcha").val();
+            let vipToken = $("#vipToken").val();
+
+            $.ajax({
+                url: '/register',
+                type: 'POST',
+                data: {
+                    username:username,
+                    password:password,
+                    captcha:captcha,
+                    token:vipToken,
+                },
+                dataType: "JSON",
+                success: function(res) {
+                    layer.close(load);
+                    if (res.code === 200) {
+                        layer.alert("注册成功",() => {
+                            window.location.href = "/login";
+                        });
+                    } else {
+                        layer.alert(res.message);
+                    }
+                },
+                error: function(error) {
+                    layer.close(load);
+                    console.error('服务器错误:', error);
+                }
+            });
+        })
+    })
+</script>
+</body>
+</html>
